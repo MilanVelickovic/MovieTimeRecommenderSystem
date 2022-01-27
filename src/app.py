@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_restful import Api, Resource
 
-from recommender import recommend
+from cbrs import recommend
 
 app = Flask(__name__)
 api = Api(app)

@@ -43,6 +43,9 @@ def joinWords(list):
 def allLowerCase(text):
     return text.lower()
 
+def extractTitle(text):
+    return [text]
+
 def extractData():
     movies = pd.read_csv("./data/tmdb_5000_movies.csv")
     credits = pd.read_csv("./data/tmdb_5000_credits.csv")
@@ -52,11 +55,12 @@ def extractData():
     movies_cast = credits["cast"].apply(extract3)
     movies_directors = credits["crew"].apply(extractDirector)
     movies_overviews = movies["overview"].apply(splitWords)
+    movies_titles = movies["title"].apply(extractTitle)
 
     data = {
         "movie_id": movies["id"],
         "title": movies["title"],
-        "tags": movies_overviews + movies_genres + movies_keywords + movies_cast + movies_directors
+        "tags": movies_overviews + movies_genres + movies_keywords + movies_cast + movies_directors + movies_titles
     }
 
     df = pd.DataFrame(data)
@@ -68,7 +72,7 @@ def extractData():
 def loadData():
     return pd.read_csv("./data/distances.csv")
 
-# extractData()
+extractData()
 df = loadData()
 
 cv_doc = CountVectorizer(max_features=5000)
@@ -86,13 +90,26 @@ def stem(text):
 df["tags"] = df["tags"].apply(stem)
 
 similarity = cosine_similarity(cv_vectors)
+print(similarity)
 
 def recommend(movie_id):
-    distances = similarity[movie_id]
+    index = df.loc[df["movie_id"] == movie_id].index[0]
+    distances = similarity[index]
     movie_list = sorted(list(enumerate(distances)), reverse= True, key= lambda x:x[1])[1:6]
     result = []
 
+    print("--------------------------------------------------")
+    print("R E C O M M E N D E D ----------------------------")
+    print("--------------------------------------------------")
+
     for movie in movie_list:
-        result.append(movie[0])
+        result.append(int(df.loc[movie[0]]["movie_id"]))
+        title = df.loc[movie[0]]["title"]
+        print(f"Movie title: {title},       match: {round(movie[1], 2)}%")
+    
+    print("--------------------------------------------------")
+    print("--------------------------------------------------")
     
     return result
+
+# print(df[df["title"].str.contains("Hobbit")])
