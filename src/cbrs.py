@@ -46,6 +46,14 @@ def allLowerCase(text):
 def extractTitle(text):
     return [text]
 
+def stem(text):
+    ps = PorterStemmer()
+    result = []
+    for word in text.split():
+        result.append(ps.stem(word))
+    
+    return ' '.join(result)
+
 def extractData():
     movies = pd.read_csv("./data/tmdb_5000_movies.csv")
     credits = pd.read_csv("./data/tmdb_5000_credits.csv")
@@ -66,31 +74,24 @@ def extractData():
     df = pd.DataFrame(data)
     df["tags"] = df["tags"].apply(joinWords)
     df["tags"] = df["tags"].apply(allLowerCase)
+    df["tags"] = df["tags"].apply(stem)
 
     df.to_csv("./data/distances.csv", index=False)
 
 def loadData():
     return pd.read_csv("./data/distances.csv")
 
-extractData()
+#extractData()
 df = loadData()
 
-cv_doc = CountVectorizer(max_features=5000)
+cv_doc = CountVectorizer(max_features=5000, stop_words=['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her', 'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', "that'll", 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', "don't", 'should', "should've", 'now', 'd', 'll', 'm', 'o', 're', 've', 'y', 'ain', 'aren', "aren't", 'couldn', "couldn't", 'didn', "didn't", 'doesn', "doesn't", 'hadn', "hadn't", 'hasn', "hasn't", 'haven', "haven't", 'isn', "isn't", 'ma', 'mightn', "mightn't", 'mustn', "mustn't", 'needn', "needn't", 'shan', "shan't", 'shouldn', "shouldn't", 'wasn', "wasn't", 'weren', "weren't", 'won', "won't", 'wouldn', "wouldn't"])
 cv_vectors = cv_doc.fit_transform(df["tags"]).toarray()
 
-ps = PorterStemmer()
-
-def stem(text):
-    result = []
-    for word in text.split():
-        result.append(ps.stem(word))
-    
-    return ' '.join(result)
-
-df["tags"] = df["tags"].apply(stem)
-
 similarity = cosine_similarity(cv_vectors)
+print("")
 print(similarity)
+print("")
+
 
 def recommend(movie_id):
     index = df.loc[df["movie_id"] == movie_id].index[0]
