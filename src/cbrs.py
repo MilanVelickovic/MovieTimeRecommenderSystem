@@ -88,10 +88,6 @@ cv_doc = CountVectorizer(max_features=5000, stop_words=['i', 'me', 'my', 'myself
 cv_vectors = cv_doc.fit_transform(df["tags"]).toarray()
 
 similarity = cosine_similarity(cv_vectors)
-print("")
-print(similarity)
-print("")
-
 
 def recommend(movie_id):
     index = df.loc[df["movie_id"] == movie_id].index[0]
