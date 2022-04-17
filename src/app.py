@@ -10,8 +10,7 @@ api = Api(app)
 CORS(app)
 
 class Recommender(Resource):
-    def get(self, movieId):
-        print(movieId)
+    def get(self, movieId: int):
         result = recommend(movieId)
         response = flask.jsonify({
             "movieId": movieId,
