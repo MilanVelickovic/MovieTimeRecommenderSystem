@@ -1,9 +1,17 @@
 import requests
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 class RatingAPI:
     def __init__(self):
-        self.base_url = "http://localhost:9000/rate/"
-        self.security_code = "w@>*5ZA{Qe/eH`9P"
+        self.base_url: str = "http://localhost:9000/rate/"
+        self.security_code: str = os.getenv("RATING_API_SEC_CODE")
     
     def getAllRatings(self):
-        return requests.get(self.base_url + "all", data= {"securityCode": self.security_code}).json()
+        data = {
+            "securityCode": self.security_code
+        }
+        
+        return requests.get(self.base_url + "all", data= data).json()

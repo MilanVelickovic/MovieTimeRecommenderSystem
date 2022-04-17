@@ -4,96 +4,89 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from nltk.stem.porter import PorterStemmer
 
-def extract(obj):
-    result = []
-    for item in json.loads(obj):
-        result.append(item["name"].replace(' ', ''))
-    
-    return result 
 
-def extract3(obj):
-    result = []
-    count = 0
-    for item in json.loads(obj):
-        if count != 3:
-            result.append(item["name"].replace(' ', ''))
-            count += 1
-        else:
-            break
+def extract(obj) -> list:
+    return [item["name"].replace(' ', '') for item in json.loads(obj)]
 
-    return result  
 
-def extractDirector(obj):
-    result = []
-    for item in json.loads(obj):
-        if item["job"] == "Director":
-            result.append(item["name"].replace(' ', ''))
+def extract3(obj) -> list:    
+    return [item["name"].replace(' ', '') for item in json.loads(obj)[:3]]
 
-    return result 
 
-def splitWords(text):
-    if type(text) != type(.1):
-        return text.split()
-    else:
-        return []
+def extractDirector(obj) -> list:
+    return [item["name"].replace(' ', '') for item in json.loads(obj) if item["job"] == "Director"]
 
-def joinWords(list):
+
+def splitWords(text: str) -> list:
+    return text.split() if type(text) != type(.1) else []
+
+
+def joinWords(list: str) -> str:
     return ' '.join(list)
 
-def allLowerCase(text):
+
+def allLowerCase(text: str) -> str:
     return text.lower()
 
-def extractTitle(text):
+
+def extractTitle(text: str) -> list:
     return [text]
 
-def stem(text):
-    ps = PorterStemmer()
-    result = []
-    for word in text.split():
-        result.append(ps.stem(word))
-    
+
+def stem(text) -> str:
+    ps: PorterStemmer = PorterStemmer()
+    result: list = [ps.stem(word) for word in text.split()]
     return ' '.join(result)
 
-def extractData():
+
+def extractData() -> None:
     movies = pd.read_csv("./data/tmdb_5000_movies.csv")
     credits = pd.read_csv("./data/tmdb_5000_credits.csv")
 
-    movies_genres = movies["genres"].apply(extract)
-    movies_keywords = movies["keywords"].apply(extract)
-    movies_cast = credits["cast"].apply(extract3)
-    movies_directors = credits["crew"].apply(extractDirector)
-    movies_overviews = movies["overview"].apply(splitWords)
-    movies_titles = movies["title"].apply(extractTitle)
+    movies_genres: list = movies["genres"].apply(extract)
+    movies_keywords: list = movies["keywords"].apply(extract)
+    movies_cast: list = credits["cast"].apply(extract3)
+    movies_directors: list = credits["crew"].apply(extractDirector)
+    movies_overviews: list = movies["overview"].apply(splitWords)
+    movies_titles: list = movies["title"].apply(extractTitle)
 
-    data = {
+    data: dict = {
         "movie_id": movies["id"],
         "title": movies["title"],
         "tags": movies_overviews + movies_genres + movies_keywords + movies_cast + movies_directors + movies_titles
     }
 
-    df = pd.DataFrame(data)
+    df: pd.DataFrame = pd.DataFrame(data)
     df["tags"] = df["tags"].apply(joinWords)
     df["tags"] = df["tags"].apply(allLowerCase)
     df["tags"] = df["tags"].apply(stem)
 
     df.to_csv("./data/distances.csv", index=False)
 
-def loadData():
+
+def loadData() -> pd.DataFrame:
     return pd.read_csv("./data/distances.csv")
+
+
+def loadStopWords() -> list:
+    with open("data/stop_words.csv") as file:
+        return [word for word in file.readline().split(', ')]
+
 
 #extractData()
 df = loadData()
 
-cv_doc = CountVectorizer(max_features=5000, stop_words=['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her', 'hers', 'herself', 'it', "it's", 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', "that'll", 'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', "don't", 'should', "should've", 'now', 'd', 'll', 'm', 'o', 're', 've', 'y', 'ain', 'aren', "aren't", 'couldn', "couldn't", 'didn', "didn't", 'doesn', "doesn't", 'hadn', "hadn't", 'hasn', "hasn't", 'haven', "haven't", 'isn', "isn't", 'ma', 'mightn', "mightn't", 'mustn', "mustn't", 'needn', "needn't", 'shan', "shan't", 'shouldn', "shouldn't", 'wasn', "wasn't", 'weren', "weren't", 'won', "won't", 'wouldn', "wouldn't"])
+cv_doc: CountVectorizer = CountVectorizer(max_features= 5000, stop_words= loadStopWords())
 cv_vectors = cv_doc.fit_transform(df["tags"]).toarray()
 
 similarity = cosine_similarity(cv_vectors)
 
-def recommend(movie_id):
-    index = df.loc[df["movie_id"] == movie_id].index[0]
+
+def recommend(movie_id: int) -> list:
+    index: int = df.loc[df["movie_id"] == movie_id].index[0]
     distances = similarity[index]
-    movie_list = sorted(list(enumerate(distances)), reverse= True, key= lambda x:x[1])[1:6]
-    result = []
+    movie_list: list = sorted(list(enumerate(distances)), reverse= True, key= lambda x:x[1])[1:6]
+    result: list = []
 
     print("--------------------------------------------------")
     print("R E C O M M E N D E D ----------------------------")
@@ -109,4 +102,6 @@ def recommend(movie_id):
     
     return result
 
-# print(df[df["title"].str.contains("Hobbit")])
+
+#print(df[df["title"].str.contains("Hobbit")])
+recommend(127585)
